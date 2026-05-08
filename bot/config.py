@@ -19,6 +19,8 @@ class Settings(BaseSettings):
     def _parse_ids(cls, v: object) -> list[int]:
         if v is None or v == "":
             return []
+        if isinstance(v, int):
+            return [v]
         if isinstance(v, list):
             return [int(x) for x in v]
         if isinstance(v, str):

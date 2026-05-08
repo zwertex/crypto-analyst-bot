@@ -1,9 +1,15 @@
-"""Render an AnalysisResult into a Telegram-friendly Markdown V2 message."""
+"""Render an AnalysisResult into a Telegram-friendly HTML message."""
 from __future__ import annotations
 
+import html
 import math
 
 from bot.services.signals import AnalysisResult, Signal, TimeframeSnapshot
+
+
+def _esc(s: str) -> str:
+    """HTML-escape dynamic text so '<', '>', '&' do not break Telegram parser."""
+    return html.escape(s, quote=False)
 
 
 def _fmt_price(value: float | None) -> str:
@@ -36,7 +42,7 @@ def _confidence_bar(c: float) -> str:
 
 def _snapshot_block(snap: TimeframeSnapshot) -> str:
     return (
-        f"<b>{snap.timeframe.upper()}</b>  RSI {snap.rsi:.1f}  "
+        f"<b>{_esc(snap.timeframe.upper())}</b>  RSI {snap.rsi:.1f}  "
         f"MACD {snap.macd:.4f}/{snap.macd_signal:.4f}\n"
         f"  EMA20 {_fmt_price(snap.ema20)}  EMA50 {_fmt_price(snap.ema50)}  "
         f"EMA200 {_fmt_price(snap.ema200)}\n"
@@ -51,14 +57,14 @@ def render_analysis(result: AnalysisResult) -> str:
     plan = result.plan
     lines: list[str] = []
     lines.append(
-        f"<b>{result.symbol}</b>  {_fmt_price(result.last_price)}  "
+        f"<b>{_esc(result.symbol)}</b>  {_fmt_price(result.last_price)}  "
         f"({_fmt_pct(result.price_change_pct_24h)} 24ч)"
     )
     if result.funding_rate is not None:
         lines.append(f"<i>Funding: {result.funding_rate * 100:+.4f}%</i>")
     lines.append("")
     lines.append(
-        f"{_signal_emoji(plan.signal)} <b>Сигнал: {plan.signal.value}</b>  "
+        f"{_signal_emoji(plan.signal)} <b>Сигнал: {_esc(plan.signal.value)}</b>  "
         f"уверенность {plan.confidence * 100:.0f}%  {_confidence_bar(plan.confidence)}"
     )
 
@@ -82,7 +88,7 @@ def render_analysis(result: AnalysisResult) -> str:
         lines.append("")
         lines.append("<b>Обоснование</b>")
         for r in result.summary_reasons[:14]:
-            lines.append(f"• {r}")
+            lines.append(f"• {_esc(r)}")
 
     lines.append("")
     lines.append(
